@@ -1,0 +1,187 @@
+---
+title: "ATP Tour viewed by Master SEP, promotion 2023"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+```
+
+
+```{r setup, include=FALSE}
+library("magrittr")
+library("tidyverse")
+library(flexdashboard)
+library(shiny)
+library(plotly)
+library(rbokeh)
+library(leaflet)
+library(ggplot2) 
+library(knitr)
+library(kableExtra)
+library(readxl)
+```
+
+
+```{r sourceimportation, include = FALSE}
+source("R/data_importation.R")
+source("R/data_wrangling.R")
+```
+
+Presentation
+==================================
+
+
+Overall 1968-2022 ATP tours {data-orientation=rows}
+===================================
+
+Row {.sidebar data-width=490}
+-----------------------------------------------------------------------
+
+```{r Carte_rencontres ,fig.width=5}
+nota_bene<- "Les rencontres ATP en simple par ville entre 1968 et 2022."
+donnees_carte %>%  
+  leaflet() %>% 
+  addTiles()  %>% 
+  setView( lat=48.86, lng=2.34 , zoom=1.5) %>%
+  addTiles() %>%
+  addCircles(label = ~mytext) %>%
+  addControl(nota_bene, position = "bottomleft")
+```
+<b>  Evolution du Prize Money des quatre tournois du Grand Chelem.</b>
+```{r prize_money_by_chlem, fig.height=4 ,fig.width=5}
+chlem <- read_excel("Chlem.xlsx")
+gfg_plot <- ggplot()+
+  geom_line(data=chlem,aes(y=Australia_Open,x= Year,colour="Australia Open"),size=1) +
+  geom_line(data=chlem,aes(y=Roland_Garros,x= Year,colour="Roland Garros"),size=1 )+
+  geom_line(data=chlem,aes(y=US_Open,x= Year,colour="US Open"),size=1) +
+  geom_line(data=chlem,aes(y=Wimbledon,x= Year,colour="Wimbledon"),size=1) +
+  scale_color_manual(name = "Tournois", values = c("Australia Open" = "lightblue","Roland Garros" = 'chocolate', "US Open" = "deepskyblue4", "Wimbledon" = "springgreen3")) +
+  xlab("Date") +
+  ylab("Gain du vainqueur en milliers de $")+
+  ggtitle("")+
+  theme(axis.text.x = element_text(angle = 45),
+        panel.background = element_rect(fill = "white", color = "white"),
+        legend.text = element_text(color = "black", size = 7),
+        legend.title = element_text(color = "black", size = 10),
+        axis.title.y = element_text(color = "black",size=10))
+ggplotly(gfg_plot)
+```
+
+
+Row { data-height=200}
+-----------------------------------------------------------------------
+
+### Pourcentage de vainqueurs droitiers
+```{r M}
+texte <- paste0(DroitierWin , " % ")
+
+valueBox(texte, "<b>de vainqueurs droiters.</b>",icon ="fa-trophy", color="skyblue")
+```
+
+### Pourcentage de vainqueurs gauchers
+```{r GC }
+texte <- paste0(GaucherWin , " % ")
+
+valueBox(texte, "<b>de vainqueurs gauchers.</b>",icon ="fa-trophy", color="skyblue")
+```
+
+### Âge médian des joueurs
+```{r D}
+ texte <- paste0(MedianAge," ans")
+
+ valueBox(texte, "<b>Âge médian des joueurs.</b>",icon ="fa-user",color="skyblue")
+```
+
+
+Row {.tabset  data-height=210}
+-----------------------------------------------------------------------
+   
+### <b>Equipements et surfaces</b>
+
+```{r}
+kable(TabEquip)%>%
+  kable_styling(latex_options=c("striped", "scale_down"),font_size = 12)%>%
+  row_spec(0,color="black", background = "skyblue", bold=TRUE, font_size = 15 )%>%
+  column_spec(1, color = "black", background = "aliceblue", bold=TRUE)%>%
+  column_spec(2, color = "darkblue", background = "aliceblue", bold=TRUE)
+```     
+### <b>Jeux</b>
+
+```{r}
+kable(TabJeux)%>%
+  kable_styling(latex_options=c("striped", "scale_down"),font_size = 12)%>%
+  row_spec(0,color="black", background = "skyblue", bold=TRUE, font_size = 15 )%>%
+  column_spec(1, color = "black", background = "aliceblue", bold=TRUE)%>%
+  column_spec(2, color = "darkblue", background = "aliceblue", bold=TRUE)                       
+
+```   
+
+### <b>Compétition et système de points</b>
+    
+```{r}
+kable(TabPoints)%>%
+  kable_styling(latex_options=c("striped", "scale_down"),font_size = 12)%>%
+  row_spec(0,color="black", background = "skyblue", bold=TRUE, font_size = 15 )%>%
+  column_spec(1, color = "black", background = "aliceblue", bold=TRUE)%>%
+  column_spec(2, color = "darkblue", background = "aliceblue", bold=TRUE)
+```
+
+
+
+Row { data-height=550}
+-----------------------------------------------------------------------
+
+
+### <b>Evolution du nombre de joueurs de l'ATP.</b>
+
+```{r nombre_joueurs_par_annees}
+GraphNbrJoueurs <-  ggplot(atp_nbrJoueurs,mapping = aes(x = Année, y = NombreJoueurs, group=1)) +
+      geom_line(color= "darkblue")+ 
+      ylab("Nombre de joueurs")+
+      scale_x_discrete("", seq("1968","2022",8)) +
+      theme(axis.text.x = element_text(angle = 45),
+            panel.background = element_rect(fill = "white", color = "white"),
+            axis.title.y = element_text(color = "black",size=10))
+
+ggplotly(GraphNbrJoueurs) 
+```
+
+
+
+### <b> Les Grand Chelem remportés par les Big 3. </b>
+
+```{r Nombre GC par joueur du Big 3}
+GraphBig3 <- ggplot(NbrGc(c("Roger Federer","Rafael Nadal","Novak Djokovic")),
+                    aes(winner_name , Nombre_de_tournois,fill=tourney_name)) + 
+             geom_col(width=0.5)+ scale_fill_discrete(type = c("Australian Open" = "lightblue", 
+                                                                "Wimbledon" = "springgreen3",
+                                                                "US Open" = "deepskyblue4",
+                                                               "Roland Garros"= 'chocolate'), name="Tournois") +   
+            xlab(" ") +
+            ylab("Tournois remportés")+
+            theme(axis.text.x = element_text(angle = 45),
+                  panel.background = element_rect(fill = "white", color = "white"),
+                  legend.text = element_text(color = "black", size = 7),
+                  legend.title = element_text(color = "black", size = 10),
+                  axis.title.y = element_text(color = "black",size=10))
+
+ggplotly(GraphBig3)
+
+```
+
+
+Men's Tennis records
+======================================
+
+
+ATP tour per year
+=====================================
+
+
+Players' view
+====================================
+

@@ -1,0 +1,13 @@
+*.RData
+*.RHistory
+.Rproj.user
+.Ruserdata
+*.rda
+*.rdx
+*.csv
+*.xlsx
+*.o
+*.pdf
+dashboard-atp-tour.Rproj
+*.html
+R/brouillon*
